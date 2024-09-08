@@ -8,10 +8,11 @@ import (
 )
 
 func home(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Server", "Go")
 	w.Write([]byte("Hello from Snippetbox"))
 }
 
-func view(w http.ResponseWriter, r *http.Request) {
+func snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
 		http.NotFound(w, r)
@@ -22,24 +23,23 @@ func view(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(msg))
 }
 
-func create(w http.ResponseWriter, r *http.Request) {
+func snippetCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Create page"))
 }
 
-func test(w http.ResponseWriter, r *http.Request) {
-	category := r.PathValue("category")
-	item := r.PathValue("item")
-	fmt.Println(category, item)
+func snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Create page POST"))
 }
 
 func main() {
 	// Use the http.NewServeMux() function to initialize a new servemux, then
 	// register the home function as the handler for the "/" URL pattern.
 	mux := http.NewServeMux()
-	mux.HandleFunc("/{$}", home)
-	mux.HandleFunc("/snippet/view/{id}", view)
-	mux.HandleFunc("/snippet/create", create)
-	mux.HandleFunc("/test/{category}/item/{item}", test)
+	mux.HandleFunc("GET /{$}", home)
+	mux.HandleFunc("GET /snippet/view/{id}", snippetView)
+	mux.HandleFunc("GET /snippet/create", snippetCreate)
+	mux.HandleFunc("POST /snippet/create", snippetCreatePost)
 
 	// Print a log message to say that the server is starting.
 	log.Print("starting server on :4000")
