@@ -18,7 +18,7 @@ type application struct {
 
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
-	dsn := flag.String("dsn", "postgres://web:password@localhost:5432/snippetbox?sslmode=disable", "PostgreSQL data source name")
+	dsn := flag.String("dsn", "postgres://postgres:mysecretpassword@localhost:5432/postgres?sslmode=disable", "PostgreSQL data source name")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))

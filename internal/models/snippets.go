@@ -19,7 +19,18 @@ type SnippetModel struct {
 
 // This will insert a new snippet into the database.
 func (m *SnippetModel) Insert(title string, content string, expires int) (int, error) {
-	return 0, nil
+	stmt := `INSERT INTO snippets (title, content, created, expires)
+         VALUES ($1, $2, NOW(), NOW() + INTERVAL '1 day' * $3)
+         RETURNING id`
+	id := 0
+
+	err := m.DB.QueryRow(stmt, title, content, expires).Scan(&id)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 // This will return a specific snippet based on its id.
