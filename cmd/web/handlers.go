@@ -10,8 +10,6 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Server", "Go")
-
 	snippets, err := app.snippets.Latest()
 
 	if err != nil {
@@ -19,9 +17,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := templateData{
-		Snippets: snippets,
-	}
+	data := app.newTemplateData(r)
+	data.Snippets = snippets
 
 	app.render(w, r, http.StatusOK, "home.tmpl", data)
 }
@@ -45,7 +42,8 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := templateData{Snippet: snippet}
+	data := app.newTemplateData(r)
+	data.Snippet = snippet
 
 	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
@@ -55,8 +53,8 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	title := "First autumn morning"
-	content := "First autumn morning\nthe mirror I stare into\nshows my father''s face.\n\n– Murakami Kijo"
+	title := "Over the wintry forest"
+	content := "Over the wintry\nforest, winds howl in rage\nwith no leaves to blow.\n\n– Natsume Soseki"
 	expires := 7
 
 	id, err := app.snippets.Insert(title, content, expires)
