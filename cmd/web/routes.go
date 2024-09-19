@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/justinas/alice"
+)
 
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
@@ -8,24 +12,21 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
-	mux.Handle("GET /{$}", sessionWrapper(app.home, app))
-	mux.Handle("GET /snippet/view/{id}", sessionWrapper(app.snippetView, app))
-	mux.Handle("GET /snippet/create", authSessionWrapper(app.snippetCreate, app))
-	mux.Handle("POST /snippet/create", authSessionWrapper(app.snippetCreatePost, app))
+	dynamic := alice.New(app.sessionManager.LoadAndSave, app.authenticate)
 
-	mux.Handle("GET /user/signup", sessionWrapper(app.userSignup, app))
-	mux.Handle("POST /user/signup", sessionWrapper(app.userSignupPost, app))
-	mux.Handle("GET /user/login", sessionWrapper(app.userLogin, app))
-	mux.Handle("POST /user/login", sessionWrapper(app.userLoginPost, app))
-	mux.Handle("POST /user/logout", authSessionWrapper(app.userLogoutPost, app))
+	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
+	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetView))
+	mux.Handle("GET /user/signup", dynamic.ThenFunc(app.userSignup))
+	mux.Handle("POST /user/signup", dynamic.ThenFunc(app.userSignupPost))
+	mux.Handle("GET /user/login", dynamic.ThenFunc(app.userLogin))
+	mux.Handle("POST /user/login", dynamic.ThenFunc(app.userLoginPost))
 
-	return app.recoverPanic(app.logRequest(commonHeaders(mux)))
-}
+	protected := dynamic.Append(app.requireAuthentication)
 
-func sessionWrapper(route http.HandlerFunc, app *application) http.Handler {
-	return app.sessionManager.LoadAndSave(http.HandlerFunc(route))
-}
+	mux.Handle("GET /snippet/create", protected.ThenFunc(app.snippetCreate))
+	mux.Handle("POST /snippet/create", protected.ThenFunc(app.snippetCreatePost))
+	mux.Handle("POST /user/logout", protected.ThenFunc(app.userLogoutPost))
 
-func authSessionWrapper(route http.HandlerFunc, app *application) http.Handler {
-	return app.sessionManager.LoadAndSave(app.requireAuthentication(http.HandlerFunc(route)))
+	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
+	return standard.Then(mux)
 }
